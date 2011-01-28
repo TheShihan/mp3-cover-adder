@@ -1,28 +1,57 @@
+#!/usr/bin/env ruby
+
 require 'rubygems'
 require 'id3lib'
 
-# Load a tag from a file
-tag = ID3Lib::Tag.new(:file)
+ARGV.each do |a|
+  puts "Processing argument: #{a}"
 
-# get music information 
-title = tag.title
-album = tag.album
+  if File.directory?(a)
+    # change to directory from command line argument
+    Dir.chdir(a)
+    puts "Now processing files in dir #{Dir.pwd}"
 
-# Get info about APIC frame to see which fields are allowed
-ID3Lib::Info.frame(:APIC)
-#=> [ 2, :APIC, "Attached picture",
-#=>   [:textenc, :mimetype, :picturetype, :description, :data] ]
+    # get all mp3 files in directory (and subdirs)
+    files = Dir.glob("*.mp3")
 
-# Add an attached picture frame
-cover = {
-  :id          => :APIC,
-  :mimetype    => 'image/jpeg',
-  :picturetype => 3,
-  :description => 'Cover',
-  :textenc     => 0,
-  :data        => File.read('cover.jpg')
-}
-tag << cover
+    if files.length > 0
+      files.each do |f|
+        puts " * Processing file: #{f}"
 
-# Last but not least, apply changes
-tag.update!
+        # Load a tag from a file
+        tag = ID3Lib::Tag.new(f)
+
+        # get music information 
+        title = tag.title
+        album = tag.album
+
+        puts " ** Found album: '#{album}' and title: '#{title}'"
+
+=begin
+        # Get info about APIC frame to see which fields are allowed
+        ID3Lib::Info.frame(:APIC)
+        #=> [ 2, :APIC, "Attached picture",
+        #=>   [:textenc, :mimetype, :picturetype, :description, :data] ]
+
+        # Add an attached picture frame
+        cover = {
+          :id          => :APIC,
+          :mimetype    => 'image/jpeg',
+          :picturetype => 3,
+          :description => 'Cover',
+          :textenc     => 0,
+          :data        => File.read('cover.jpg')
+        }
+        tag << cover
+
+        # Last but not least, apply changes
+        tag.update!
+=end
+      end
+    else
+      puts " * No files in directory #{Dir.pwd} found for processing"
+    end
+  else
+    puts "#{a} is not a directory"
+  end
+end
