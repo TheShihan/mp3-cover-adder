@@ -11,3 +11,5 @@ tmtags
 *.sqlite
 test_data/**/*
 test_data
+test_data_original/**/*
+test_data_original

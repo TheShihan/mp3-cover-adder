@@ -1,7 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'rubygems'
 require 'id3lib'
+require 'open-uri'
+require 'rails'
+require 'rubygems'
+require 'scrobbler'
+require 'time'
 
 if ARGV.length > 0
   ARGV.each do |a|
@@ -22,33 +26,78 @@ if ARGV.length > 0
           # Load a tag from a file
           tag = ID3Lib::Tag.new(f)
 
-          # get music information 
-          title  = tag.title
-          album  = tag.album
-          artist = tag.artist
+          unless tag.nil?
+            # get music information 
+            title  = tag.title
+            album  = tag.album
+            artist = tag.artist
 
-          puts " ** tags: artist: '#{artist}', album: '#{album}', title: '#{title}'"
+            puts " ** tags: artist: '#{artist}', album: '#{album}', title: '#{title}'"
 
-=begin
-          # Get info about APIC frame to see which fields are allowed
-          ID3Lib::Info.frame(:APIC)
-          #=> [ 2, :APIC, "Attached picture",
-          #=>   [:textenc, :mimetype, :picturetype, :description, :data] ]
+            # check if album cover art already present
+            contains_cover = false
+            tag.entries.each do |e|
+              if e.has_key?(:id) and e[:id] == :APIC
+                contains_cover = true
+                break
+              end
+            end
 
-          # Add an attached picture frame
-          cover = {
-            :id          => :APIC,
-            :mimetype    => 'image/jpeg',
-            :picturetype => 3,
-            :description => 'Cover',
-            :textenc     => 0,
-            :data        => File.read('cover.jpg')
-          }
-          tag << cover
+            unless contains_cover
+              # cover art missing in file
+              puts " *** Cover art missing, trying to get one"
 
-          # Last but not least, apply changes
-          tag.update!
-=end
+              # access Last.fm information
+              unless album.nil? || artist.nil?
+                album = Scrobbler::Album.new(artist, album, :include_info => true)
+
+                cover_url  = album.image_large
+
+                unless cover_url.nil?
+                  img_tmp_filename = 'image.tmp'
+                  open(img_tmp_filename, 'wb') do |file|
+                    f << open(cover_url).read
+
+                    unless f.nil? 
+                      # tmp image could be created
+                      puts " **** Inserting new cover into file"
+                      
+                      content_type = 'image/jpg'
+
+                      open(cover_url) do |tmp_cover_file|
+                        content_type_src = tmp_cover_file.content_type
+
+                        content_type = content_type_src unless content_type_src.nil?
+                      end
+                      
+                      cover = {
+                        :id          => :APIC,
+                        :mimetype    => content_type, 
+                        :picturetype => 3,
+                        :description => 'Cover',
+                        :textenc     => 0,
+                        :data        => File.read(img_tmp_filename)
+                      }
+                      tag << cover
+
+                      #save new cover
+                      tag.update!
+
+                      # new cover image saved
+                      puts " ***** New cover image stored in file"
+                    else
+                      puts " **** New cover couldn't be downloaded"
+                    end
+                  end
+                end
+              end
+            else
+              # cover already present
+              puts " *** Cover art already present"
+            end
+          else
+            puts " *** Tag could not be determined"
+          end
         end
       else
         puts " * No files in directory #{Dir.pwd} found for processing"
