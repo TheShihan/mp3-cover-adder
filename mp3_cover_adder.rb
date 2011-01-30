@@ -3,7 +3,6 @@
 require 'id3lib'
 require 'open-uri'
 require 'rails'
-require 'rubygems'
 require 'scrobbler'
 require 'time'
 
