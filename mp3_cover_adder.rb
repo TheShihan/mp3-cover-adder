@@ -48,7 +48,11 @@ if ARGV.length > 0
 
               # access Last.fm information
               unless album.nil? || artist.nil?
-                album = Scrobbler::Album.new(artist, album, :include_info => true)
+                begin
+                  album = Scrobbler::Album.new(artist, album, :include_info => true)
+                rescue
+                  album = Scrobbler::Album.new(artist, album)
+                end
 
                 cover_url  = album.image_large
 
@@ -92,6 +96,8 @@ if ARGV.length > 0
                     puts " **** New cover couldn't be downloaded"
                   end
                 end
+              else
+                puts " **** Album information missing. Cannot use for Last.fm"
               end
             else
               # cover already present
