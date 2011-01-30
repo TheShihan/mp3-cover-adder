@@ -55,39 +55,42 @@ if ARGV.length > 0
 
                 unless cover_url.nil?
                   img_tmp_filename = 'image.tmp'
-                  open(img_tmp_filename, 'wb') do |file|
-                    f << open(cover_url).read
+                  File.open(img_tmp_filename, 'wb') do |file|
+                    file.print open(cover_url).read
+                  end
 
-                    unless f.nil? 
-                      # tmp image could be created
-                      puts " **** Inserting new cover into file"
-                      
-                      content_type = 'image/jpg'
+                  unless f.nil? 
+                    # tmp image could be created
+                    puts " **** Inserting new cover into file"
+                    
+                    content_type = 'image/jpg'
 
-                      open(cover_url) do |tmp_cover_file|
-                        content_type_src = tmp_cover_file.content_type
+                    open(cover_url) do |tmp_cover_file|
+                      content_type_src = tmp_cover_file.content_type
 
-                        content_type = content_type_src unless content_type_src.nil?
-                      end
-                      
-                      cover = {
-                        :id          => :APIC,
-                        :mimetype    => content_type, 
-                        :picturetype => 3,
-                        :description => 'Cover',
-                        :textenc     => 0,
-                        :data        => File.read(img_tmp_filename)
-                      }
-                      tag << cover
-
-                      #save new cover
-                      tag.update!
-
-                      # new cover image saved
-                      puts " ***** New cover image stored in file"
-                    else
-                      puts " **** New cover couldn't be downloaded"
+                      content_type = content_type_src unless content_type_src.nil?
                     end
+                    
+                    cover = {
+                      :id          => :APIC,
+                      :mimetype    => content_type, 
+                      :picturetype => 3,
+                      :description => 'Cover',
+                      :textenc     => 0,
+                      :data        => File.read(img_tmp_filename)
+                    }
+                    tag << cover
+
+                    #save new cover
+                    tag.update!
+
+                    # new cover image saved
+                    puts " ***** New cover image stored in file"
+                    
+                    # delete temporary file
+                    File.delete(img_tmp_filename)
+                  else
+                    puts " **** New cover couldn't be downloaded"
                   end
                 end
               end
