@@ -51,48 +51,54 @@ if ARGV.length > 0
             puts " *** Cover art missing, trying to get one"
 
             # access Last.fm information
-            unless album.nil? || artist.nil?
+            unless album.nil? || artist.nil? || album.length < 1 || artist.length < 1
               begin
                 album = Scrobbler::Album.new(artist, album, :include_info => true)
               rescue
-                album = Scrobbler::Album.new(artist, album)
-              end
+                # most likely there is no extended information avaiable
+                begin
+                  album = Scrobbler::Album.new(artist, album)
 
-              cover_url  = album.image_large
-              
-              unless cover_url.nil?
-                puts "Cover image found at: #{cover_url}"
+                  cover_url  = album.image_large
+                  
+                  unless cover_url.nil?
+                    puts "Cover image found at: #{cover_url}"
 
-                # tmp image could be created
-                puts " **** Inserting new cover into file"
-                
-                content_type = 'image/jpg'
+                    # tmp image could be created
+                    puts " **** Inserting new cover into file"
+                    
+                    content_type = 'image/jpg'
 
-                open(cover_url) do |tmp_cover_file|
-                  content_type_src = tmp_cover_file.content_type
-                  content_type = content_type_src unless content_type_src.nil?
+                    open(cover_url) do |tmp_cover_file|
+                      content_type_src = tmp_cover_file.content_type
+                      content_type = content_type_src unless content_type_src.nil?
+                    end
+                    
+                    image = open(cover_url).read
+                    
+                    cover = {
+                      :id          => :APIC,
+                      :mimetype    => content_type, 
+                      :picturetype => 3,
+                      :description => 'Cover',
+                      :textenc     => 0,
+                      :data        => image 
+                    }
+                    tag << cover
+
+                    #save new cover
+                    tag.update!
+
+                    # update file processing counter
+                    processed_files += 1
+
+                    # new cover image saved
+                    puts " ***** New cover image stored in file"
+                    puts " ***** Number of mp3s tagged: #{processed_files}"
+                  end
+                rescue StandardError => bang
+                  puts " **** ERROR: couldn't get album information: " + bang
                 end
-                
-                image = open(cover_url).read
-                
-                cover = {
-                  :id          => :APIC,
-                  :mimetype    => content_type, 
-                  :picturetype => 3,
-                  :description => 'Cover',
-                  :textenc     => 0,
-                  :data        => image 
-                }
-                tag << cover
-
-                #save new cover
-                tag.update!
-
-                # update file processing counter
-                processed_files += 1
-
-                # new cover image saved
-                puts " ***** New cover image stored in file"
               end
             else
               puts " **** Album information missing. Cannot use for Last.fm"
@@ -105,7 +111,6 @@ if ARGV.length > 0
           puts " *** Tag could not be determined"
         end
       end
-        puts "   Number of mp3s tagged: #{processed_files}"
     else
       puts "#{a} is not a directory"
     end
