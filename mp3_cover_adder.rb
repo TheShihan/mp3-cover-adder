@@ -7,6 +7,8 @@ require 'scrobbler'
 require 'time'
 
 if ARGV.length > 0
+  start_time = Time.now
+
   ARGV.each do |a|
     puts "Processing argument: #{a}"
 
@@ -110,6 +112,8 @@ if ARGV.length > 0
         else
           puts " *** Tag could not be determined"
         end
+        time_duration = Time.now - start_time
+        puts " * Elapsed time: #{time_duration} seconds"
       end
     else
       puts "#{a} is not a directory"
