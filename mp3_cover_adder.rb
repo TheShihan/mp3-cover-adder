@@ -55,55 +55,61 @@ if ARGV.length > 0
             # access Last.fm information
             unless album.nil? || artist.nil? || album.length < 1 || artist.length < 1
               begin
-                album = Scrobbler::Album.new(artist, album, :include_info => true)
+                lastfm_album = Scrobbler::Album.new(artist, album, :include_info => true)
               rescue
                 # most likely there is no extended information avaiable
                 begin
-                  album = Scrobbler::Album.new(artist, album)
-
-                  cover_url  = album.image_large
-                  
-                  unless cover_url.nil?
-                    puts "Cover image found at: #{cover_url}"
-
-                    # tmp image could be created
-                    puts " **** Inserting new cover into file"
-                    
-                    content_type = 'image/jpg'
-
-                    open(cover_url) do |tmp_cover_file|
-                      content_type_src = tmp_cover_file.content_type
-                      content_type = content_type_src unless content_type_src.nil?
-                    end
-                    
-                    image = open(cover_url).read
-                    
-                    cover = {
-                      :id          => :APIC,
-                      :mimetype    => content_type, 
-                      :picturetype => 3,
-                      :description => 'Cover',
-                      :textenc     => 0,
-                      :data        => image 
-                    }
-                    tag << cover
-
-                    #save new cover
-                    tag.update!
-
-                    # update file processing counter
-                    processed_files += 1
-
-                    # new cover image saved
-                    puts " ***** New cover image stored in file"
-                    puts " ***** Number of mp3s tagged: #{processed_files}"
-                  end
+                  lastfm_album = Scrobbler::Album.new(artist, album)
                 rescue StandardError => bang
                   puts " **** ERROR: couldn't get album information: " + bang
                 end
               end
+
+              unless lastfm_album.nil?
+                cover_url  = lastfm_album.image_large
+                
+                unless cover_url.nil?
+                  puts "Cover image found at: #{cover_url}"
+
+                  # tmp image could be created
+                  puts " **** Inserting new cover into file"
+                  
+                  content_type = 'image/jpg'
+
+                  open(cover_url) do |tmp_cover_file|
+                    content_type_src = tmp_cover_file.content_type
+                    content_type = content_type_src unless content_type_src.nil?
+                  end
+                  
+                  image = open(cover_url).read
+                  
+                  cover = {
+                    :id          => :APIC,
+                    :mimetype    => content_type, 
+                    :picturetype => 3,
+                    :description => 'Cover',
+                    :textenc     => 0,
+                    :data        => image 
+                  }
+                  tag << cover
+
+                  #save new cover
+                  tag.update!
+
+                  # update file processing counter
+                  processed_files += 1
+
+                  # new cover image saved
+                  puts " ***** New cover image stored in file"
+                  puts " ***** Number of mp3s tagged: #{processed_files}"
+                else
+                  puts " **** No cover url found, cannot insert cover image"
+                end
+              else
+                puts " **** Couldn't get information from Last.fm"
+              end
             else
-              puts " **** Album information missing. Cannot use for Last.fm"
+              puts " **** Missing information in id3 tags. Cannot use for Last.fm"
             end
           else
             # cover already present
