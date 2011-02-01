@@ -18,7 +18,7 @@ if ARGV.length > 0
       puts "Now processing files in dir #{Dir.pwd}"
 
       # get all mp3 files in directory (and subdirs)
-      files = Dir.glob("**/*.mp3")
+      files = Dir.glob("**/*.{mp3,Mp3,mP3,MP3}")
 
       puts " * No files in directory #{Dir.pwd} found" if files.length < 1
 
