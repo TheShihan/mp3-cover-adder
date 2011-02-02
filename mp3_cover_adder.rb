@@ -39,17 +39,8 @@ if ARGV.length > 0
 
           puts " ** tags: artist: '#{artist}', album: '#{album}', title: '#{title}'"
 
-          # check if album cover art already present
-          contains_cover = false
-          tag.entries.each do |e|
-            if e.has_key?(:id) and e[:id] == :APIC
-              contains_cover = true
-              break
-            end
-          end
-
-          unless contains_cover
-            # cover art missing in file
+          # check if album cover art missing
+          if (tag.entries.select { |h| h[:id] == :APIC }).empty? == true
             puts " *** Cover art missing, trying to get one"
 
             # access Last.fm information
@@ -69,7 +60,7 @@ if ARGV.length > 0
                 cover_url  = lastfm_album.image_large
                 
                 unless cover_url.nil?
-                  puts "Cover image found at: #{cover_url}"
+                  puts " **** Cover image found at: #{cover_url}"
 
                   # tmp image could be created
                   puts " **** Inserting new cover into file"
