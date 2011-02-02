@@ -8,5 +8,5 @@ Please follow the instructions at:
 * It's easiest to start this script from a shell
 * You should have ruby and rubygems installed
 * You should install "id3lib"
-* You should install some gems (id3lib-ruby, scrobbler, rails
+* You should install some gems (id3lib-ruby, scrobbler, rails)
 * Start the script: ./name_of_script path_to_dir_with_mp3_files
