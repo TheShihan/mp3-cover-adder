@@ -65,22 +65,16 @@ if ARGV.length > 0
                   # tmp image could be created
                   puts " **** Inserting new cover into file"
                   
-                  content_type = 'image/jpg'
-
-                  open(cover_url) do |tmp_cover_file|
-                    content_type_src = tmp_cover_file.content_type
-                    content_type = content_type_src unless content_type_src.nil?
-                  end
-                  
-                  image = open(cover_url).read
+                  # load image data
+                  image_data = open(cover_url)
                   
                   cover = {
                     :id          => :APIC,
-                    :mimetype    => content_type, 
+                    :mimetype    => image_data.content_type, 
                     :picturetype => 3,
                     :description => 'Cover',
                     :textenc     => 0,
-                    :data        => image 
+                    :data        => image_data.read 
                   }
                   tag << cover
 
