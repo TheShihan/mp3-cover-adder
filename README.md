@@ -10,3 +10,6 @@ Please follow the instructions at:
 * You should install "id3lib"
 * You should install some gems (id3lib-ruby, scrobbler, rails)
 * Start the script: ./name_of_script path_to_dir_with_mp3_files
+
+## Licence
+BSD. For more information have a look at the LICENCE file.
