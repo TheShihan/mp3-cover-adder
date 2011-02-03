@@ -51,8 +51,8 @@ if ARGV.length > 0
                 # most likely there is no extended information avaiable
                 begin
                   lastfm_album = Scrobbler::Album.new(artist, album)
-                rescue StandardError => bang
-                  puts " **** ERROR: couldn't get album information: " + bang
+                rescue => e
+                  puts " **** ERROR: couldn't get album information: " + e.message
                 end
               end
 
