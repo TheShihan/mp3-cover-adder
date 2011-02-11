@@ -6,116 +6,125 @@ require 'rails'
 require 'scrobbler'
 require 'time'
 
-if ARGV.length > 0
-  start_time = Time.now
+# store the state of the terminal
+stty_save = `stty -g`.chomp
 
-  ARGV.each do |a|
-    puts "Processing argument: #{a}"
+begin
+  if ARGV.length > 0
+    start_time = Time.now
 
-    if File.directory?(a)
-      # change to directory from command line argument
-      Dir.chdir(a)
-      puts "Now processing files in dir #{Dir.pwd}"
+    ARGV.each do |a|
+      puts "Processing argument: #{a}"
 
-      # get all mp3 files in directory (and subdirs)
-      files = Dir.glob("**/*.{mp3,Mp3,mP3,MP3}")
+      if File.directory?(a)
+        # change to directory from command line argument
+        Dir.chdir(a)
+        puts "Now processing files in dir #{Dir.pwd}"
 
-      puts " * No files in directory #{Dir.pwd} found" if files.length < 1
+        # get all mp3 files in directory (and subdirs)
+        files = Dir.glob("**/*.{mp3,Mp3,mP3,MP3}")
 
-      puts "   Found #{files.length} file(s) to process"
-      processed_files = 0
+        puts " * No files in directory #{Dir.pwd} found" if files.length < 1
 
-      files.each do |f|
-        puts " * Processing file: #{f}"
+        puts "   Found #{files.length} file(s) to process"
+        processed_files = 0
 
-        # Load a tag from a file
-        tag = ID3Lib::Tag.new(f)
+        files.each do |f|
+          puts " * Processing file: #{f}"
 
-        unless tag.nil?
-          # get music information 
-          title  = tag.title
-          album  = tag.album
-          artist = tag.artist
+          # Load a tag from a file
+          tag = ID3Lib::Tag.new(f)
 
-          puts " ** tags: artist: '#{artist}', album: '#{album}', title: '#{title}'"
+          unless tag.nil?
+            # get music information 
+            title  = tag.title
+            album  = tag.album
+            artist = tag.artist
 
-          # check if album cover art missing
-          if (tag.entries.select { |h| h[:id] == :APIC }).empty? == true
-            puts " *** Cover art missing, trying to get one"
+            puts " ** tags: artist: '#{artist}', album: '#{album}', title: '#{title}'"
 
-            # access Last.fm information
-            unless album.nil? || artist.nil? || album.length < 1 || artist.length < 1
-              begin
-                lastfm_album = Scrobbler::Album.new(artist, album, :include_info => true)
-              rescue
-                # most likely there is no extended information avaiable
+            # check if album cover art missing
+            if (tag.entries.select { |h| h[:id] == :APIC }).empty? == true
+              puts " *** Cover art missing, trying to get one"
+
+              # access Last.fm information
+              unless album.nil? || artist.nil? || album.length < 1 || artist.length < 1
                 begin
-                  lastfm_album = Scrobbler::Album.new(artist, album)
-                rescue => e
-                  puts " **** ERROR: couldn't get album information: " + e.message
+                  lastfm_album = Scrobbler::Album.new(artist, album, :include_info => true)
+                rescue
+                  # most likely there is no extended information avaiable
+                  begin
+                    lastfm_album = Scrobbler::Album.new(artist, album)
+                  rescue => e
+                    puts " **** ERROR: couldn't get album information: " + e.message
+                  end
                 end
-              end
 
-              unless lastfm_album.nil?
-                cover_url  = lastfm_album.image_large
-                
-                unless cover_url.nil?
-                  puts " **** Cover image found at: #{cover_url}"
-
-                  # tmp image could be created
-                  puts " **** Inserting new cover into file"
+                unless lastfm_album.nil?
+                  cover_url  = lastfm_album.image_large
                   
-                  # load image data
-                  image_data = open(cover_url)
+                  unless cover_url.nil?
+                    puts " **** Cover image found at: #{cover_url}"
+
+                    # tmp image could be created
+                    puts " **** Inserting new cover into file"
+                    
+                    # load image data
+                    image_data = open(cover_url)
+                    
+                    cover = {
+                      :id          => :APIC,
+                      :mimetype    => image_data.content_type, 
+                      :picturetype => 3,
+                      :description => 'Cover',
+                      :textenc     => 0,
+                      :data        => image_data.read 
+                    }
+                    tag << cover
+
+                    #save new cover
+                    tag.update!
+
+                    # update file processing counter
+                    processed_files += 1
+
+                    # new cover image saved
+                    puts " ***** New cover image stored in file"
+                    puts " ***** Number of mp3s tagged: #{processed_files}"
+
+                    image_data = nil
+                  else
+                    puts " **** No cover url found, cannot insert cover image"
+                  end
                   
-                  cover = {
-                    :id          => :APIC,
-                    :mimetype    => image_data.content_type, 
-                    :picturetype => 3,
-                    :description => 'Cover',
-                    :textenc     => 0,
-                    :data        => image_data.read 
-                  }
-                  tag << cover
-
-                  #save new cover
-                  tag.update!
-
-                  # update file processing counter
-                  processed_files += 1
-
-                  # new cover image saved
-                  puts " ***** New cover image stored in file"
-                  puts " ***** Number of mp3s tagged: #{processed_files}"
-
-                  image_data = nil
+                  lastfm_album = nil
                 else
-                  puts " **** No cover url found, cannot insert cover image"
+                  puts " **** Couldn't get information from Last.fm"
                 end
-                
-                lastfm_album = nil
               else
-                puts " **** Couldn't get information from Last.fm"
+                puts " **** Missing information in id3 tags. Cannot use for Last.fm"
               end
             else
-              puts " **** Missing information in id3 tags. Cannot use for Last.fm"
+              # cover already present
+              puts " *** Cover art already present"
             end
+            
+            tag = nil
           else
-            # cover already present
-            puts " *** Cover art already present"
+            puts " *** Tag could not be determined"
           end
-          
-          tag = nil
-        else
-          puts " *** Tag could not be determined"
+          time_duration = Time.now - start_time
+          puts " * Elapsed time: #{time_duration} seconds"
         end
-        time_duration = Time.now - start_time
-        puts " * Elapsed time: #{time_duration} seconds"
+      else
+        puts "#{a} is not a directory"
       end
-    else
-      puts "#{a} is not a directory"
     end
+  else
+    puts "missing arguments: please pass at least one directory path"
   end
-else
-  puts "missing arguments: please pass at least one directory path"
+rescue Interrupt => e
+  # restore terminal state
+  system('stty', stty_save)
+  exit
 end
