@@ -111,9 +111,6 @@ if ARGV.length > 0
         end
         time_duration = Time.now - start_time
         puts " * Elapsed time: #{time_duration} seconds"
-
-        # call garbage collector
-        GC.start
       end
     else
       puts "#{a} is not a directory"
