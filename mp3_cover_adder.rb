@@ -87,9 +87,13 @@ if ARGV.length > 0
                   # new cover image saved
                   puts " ***** New cover image stored in file"
                   puts " ***** Number of mp3s tagged: #{processed_files}"
+
+                  image_data = nil
                 else
                   puts " **** No cover url found, cannot insert cover image"
                 end
+                
+                lastfm_album = nil
               else
                 puts " **** Couldn't get information from Last.fm"
               end
@@ -100,11 +104,16 @@ if ARGV.length > 0
             # cover already present
             puts " *** Cover art already present"
           end
+          
+          tag = nil
         else
           puts " *** Tag could not be determined"
         end
         time_duration = Time.now - start_time
         puts " * Elapsed time: #{time_duration} seconds"
+
+        # call garbage collector
+        GC.start
       end
     else
       puts "#{a} is not a directory"
